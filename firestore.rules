@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: equipes
+    // Fields: nome (string), area (string), supervisor (string), createdAt (timestamp)
+    //
+    // Collection: pacientes
+    // Fields: nome (string), dataNascimento (string), cpf (string), genero (string), 
+    //         telefone (string), endereco (string), equipeId (string), categorias (list), createdAt (timestamp)
+    //
+    // Collection: atendimentos
+    // Fields: pacienteId (string), data (timestamp), tipo (string), notas (string), medicoes (map)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasUserData() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActive() {
+      return isAuthenticated() && hasUserData() && getUserData().status == "active";
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "rhmwmdjg@gmail.com" ||
+         (hasUserData() && getUserData().role == "admin" && getUserData().status == "active"));
+    }
+
+    function isProfissional() {
+      return isActive() && getUserData().role == "profissional";
+    }
+
+    function isAssignedToEquipe(equipeId) {
+      return isProfissional() && getUserData().equipeId == equipeId;
+    }
+
+    function isValidString(val, maxLen) {
+      return val is string && val.size() > 0 && val.size() <= maxLen;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'nome', 'role', 'status']) &&
+             isValidString(data.nome, 100) &&
+             isValidString(data.email, 100) &&
+             data.role in ['admin', 'profissional'] &&
+             data.status in ['pending', 'active', 'rejected'];
+    }
+
+    // Users
+    match /users/{userId} {
+      allow get: if isAuthenticated() && (request.auth.uid == userId || (request.auth.token.email == "rhmwmdjg@gmail.com"));
+      allow list: if isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId && 
+        isValidUser(request.resource.data) &&
+        (request.resource.data.status == "pending" || 
+         (request.auth.token.email == "rhmwmdjg@gmail.com" && request.resource.data.status == "active"));
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId && 
+        isValidUser(request.resource.data) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'equipeId', 'status'])));
+      allow delete: if isAdmin();
+    }
+
+    // Equipes
+    match /equipes/{equipeId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Pacientes
+    match /pacientes/{pacienteId} {
+      allow read: if isAdmin() || (isActive() && isAssignedToEquipe(resource.data.equipeId));
+      allow create: if isAdmin() || (isActive() && isAssignedToEquipe(request.resource.data.equipeId));
+      allow update: if isAdmin() || (isActive() && isAssignedToEquipe(resource.data.equipeId) && isAssignedToEquipe(request.resource.data.equipeId));
+      allow delete: if isAdmin();
+    }
+
+    // Atendimentos
+    match /atendimentos/{atendimentoId} {
+      allow read: if isAdmin() || (isActive() && isAssignedToEquipe(get(/databases/$(database)/documents/pacientes/$(resource.data.pacienteId)).data.equipeId));
+      allow create, update: if isAdmin() || (isActive() && isAssignedToEquipe(get(/databases/$(database)/documents/pacientes/$(request.resource.data.pacienteId)).data.equipeId));
+      allow delete: if isAdmin();
+    }
+  }
+}

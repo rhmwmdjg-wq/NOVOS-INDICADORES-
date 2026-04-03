@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Equipe": {
+      "title": "Equipe de PSF",
+      "description": "Equipe de Saúde da Família responsável por uma área.",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string", "description": "Nome da equipe (ex: Equipe Azul)" },
+        "area": { "type": "string", "description": "Área de abrangência" },
+        "supervisor": { "type": "string", "description": "Nome do supervisor responsável" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "area"]
+    },
+    "Paciente": {
+      "title": "Paciente",
+      "description": "Cadastro individual de paciente vinculado a uma equipe.",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string", "description": "Nome completo" },
+        "dataNascimento": { "type": "string", "format": "date" },
+        "cpf": { "type": "string", "description": "CPF do paciente" },
+        "genero": { "type": "string", "enum": ["Masculino", "Feminino", "Outro"] },
+        "telefone": { "type": "string" },
+        "endereco": { "type": "string" },
+        "equipeId": { "type": "string", "description": "ID da equipe de PSF vinculada" },
+        "categorias": { 
+          "type": "array", 
+          "items": { "type": "string", "enum": ["Diabético", "Hipertenso", "Criança", "Idoso", "Gestante", "Puérpera"] },
+          "description": "Condições ou ciclos de vida do paciente"
+        },
+        "visitaACS": { "type": "boolean", "description": "Se a visita do ACS foi realizada" },
+        "consultaPuerperal": { "type": "boolean", "description": "Se a consulta puerperal foi realizada" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "dataNascimento", "equipeId", "categorias"]
+    },
+    "SystemSettings": {
+      "title": "Configurações do Sistema",
+      "description": "Configurações globais de identidade do sistema.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome do sistema" },
+        "subtitle": { "type": "string", "description": "Subtítulo ou unidade central" }
+      },
+      "required": ["name"]
+    },
+    "Atendimento": {
+      "title": "Atendimento",
+      "description": "Registro de atendimento clínico ou visita domiciliar.",
+      "type": "object",
+      "properties": {
+        "pacienteId": { "type": "string" },
+        "data": { "type": "string", "format": "date-time" },
+        "tipo": { "type": "string", "enum": ["Consulta", "Visita Domiciliar", "Exame"] },
+        "notas": { "type": "string" },
+        "medicoes": {
+          "type": "object",
+          "properties": {
+            "pressaoArterial": { "type": "string" },
+            "glicemia": { "type": "number" },
+            "peso": { "type": "number" }
+          }
+        }
+      },
+      "required": ["pacienteId", "data", "tipo"]
+    },
+    "User": {
+      "title": "Perfil do Usuário",
+      "description": "Dados de perfil e permissões do profissional no sistema.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "nome": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "profissional"] },
+        "status": { "type": "string", "enum": ["pending", "active", "rejected"] },
+        "requestedRole": { "type": "string", "enum": ["admin", "profissional"] },
+        "requestedEquipeId": { "type": "string" },
+        "equipeId": { "type": "string", "description": "ID da equipe vinculada (apenas para profissionais)" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "status"]
+    }
+  },
+  "firestore": {
+    "/equipes": { "schema": "Equipe", "description": "Coleção de equipes de PSF" },
+    "/pacientes": { "schema": "Paciente", "description": "Coleção de pacientes cadastrados" },
+    "/atendimentos": { "schema": "Atendimento", "description": "Histórico de atendimentos" },
+    "/users": { "schema": "User", "description": "Perfis de usuários e permissões" },
+    "/settings": { "schema": "SystemSettings", "description": "Configurações globais do sistema" }
+  }
+}
