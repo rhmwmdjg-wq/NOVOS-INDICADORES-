@@ -38,7 +38,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "rhmwmdjg@gmail.com" ||
+        ((request.auth.token.email == "rhmwmdjg@gmail.com" && request.auth.token.email_verified == true) ||
          (hasUserData() && getUserData().role == "admin" && getUserData().status == "active"));
     }
 
@@ -64,8 +64,7 @@ service cloud.firestore {
 
     // Users
     match /users/{userId} {
-      allow get: if isAuthenticated() && (request.auth.uid == userId || (request.auth.token.email == "rhmwmdjg@gmail.com"));
-      allow list: if isAdmin();
+      allow read: if isAuthenticated() && (request.auth.uid == userId || request.auth.token.email == "rhmwmdjg@gmail.com");
       allow create: if isAuthenticated() && request.auth.uid == userId && 
         isValidUser(request.resource.data) &&
         (request.resource.data.status == "pending" || 

@@ -180,14 +180,14 @@ export const EquipesPacientes: React.FC<{ userProfile: any, loading: boolean }> 
             <ChevronRight className="w-3 h-3" />
             <span className="text-primary font-semibold">Equipes e Pacientes</span>
           </nav>
-          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">Gestão de Equipes PSF</h1>
-          <p className="text-on-surface-variant mt-1">Monitoramento por equipes e cadastro individualizado</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">Gestão de Equipes PSF</h1>
+          <p className="text-sm text-on-surface-variant mt-1">Monitoramento por equipes e cadastro individualizado</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           {isAdmin && (
             <button 
               onClick={() => setShowAddEquipe(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant/20 rounded-xl text-sm font-medium hover:bg-surface-container-low transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-outline-variant/20 rounded-xl text-sm font-medium hover:bg-surface-container-low transition-colors w-full sm:w-auto"
             >
               <Users className="w-4 h-4" />
               Nova Equipe
@@ -195,7 +195,7 @@ export const EquipesPacientes: React.FC<{ userProfile: any, loading: boolean }> 
           )}
           <button 
             onClick={() => setShowAddPaciente(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all w-full sm:w-auto"
           >
             <UserPlus className="w-4 h-4" />
             Cadastrar Paciente
@@ -364,7 +364,7 @@ export const EquipesPacientes: React.FC<{ userProfile: any, loading: boolean }> 
             />
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-8"
+              className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8"
             >
               <h2 className="text-2xl font-bold mb-6">Nova Equipe PSF</h2>
               <form onSubmit={handleAddEquipe} className="space-y-4">
@@ -426,7 +426,7 @@ export const EquipesPacientes: React.FC<{ userProfile: any, loading: boolean }> 
             />
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
+              className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
             >
               <h2 className="text-2xl font-bold mb-6">Cadastrar Novo Paciente</h2>
               <form onSubmit={handleAddPaciente} className="space-y-4">

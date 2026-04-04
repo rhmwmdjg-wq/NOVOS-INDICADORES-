@@ -62,12 +62,14 @@ type View = 'dashboard' | 'ciclos' | 'mulher' | 'cronicas' | 'equipes' | 'settin
 
 // --- Components ---
 
-const Sidebar = ({ currentView, setView, userProfile, equipes, systemSettings }: { 
+const Sidebar = ({ currentView, setView, userProfile, equipes, systemSettings, isOpen, onClose }: { 
   currentView: View, 
   setView: (v: View) => void, 
   userProfile: UserProfile | null,
   equipes: any[],
-  systemSettings: any
+  systemSettings: any,
+  isOpen: boolean,
+  onClose: () => void
 }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard Geral', icon: LayoutDashboard },
@@ -89,64 +91,90 @@ const Sidebar = ({ currentView, setView, userProfile, equipes, systemSettings }:
   const displayTitle = teamName || systemSettings?.name || "Centro Médico";
   const displaySubtitle = teamName ? "Sua Unidade de Saúde" : (systemSettings?.subtitle || "Unidade Central");
 
+  const handleSetView = (v: View) => {
+    setView(v);
+    onClose();
+  };
+
   return (
-    <aside className="w-72 h-screen fixed left-0 top-0 pt-16 bg-surface-container dark:bg-slate-900 border-r border-outline-variant/20 z-40 hidden md:flex flex-col">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-          <Stethoscope className="text-white w-6 h-6" />
+    <>
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside className={`w-72 h-screen fixed left-0 top-0 pt-16 bg-surface-container dark:bg-slate-900 border-r border-outline-variant/20 z-40 flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="p-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+              <Stethoscope className="text-white w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-headline text-sm font-bold text-primary truncate max-w-[140px]">{displayTitle}</h3>
+              <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold truncate max-w-[140px]">{displaySubtitle}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="md:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full">
+            <LogOut className="w-5 h-5 rotate-180" />
+          </button>
         </div>
-        <div>
-          <h3 className="font-headline text-sm font-bold text-primary truncate max-w-[160px]">{displayTitle}</h3>
-          <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold truncate max-w-[160px]">{displaySubtitle}</p>
-        </div>
-      </div>
-      
-      <nav className="flex-1 px-4 space-y-1 text-sm font-medium">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setView(item.id as View)}
+        
+        <nav className="flex-1 px-4 space-y-1 text-sm font-medium overflow-y-auto">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleSetView(item.id as View)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                currentView === item.id 
+                  ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary/20' 
+                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-1">
+          <button 
+            onClick={() => handleSetView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-              currentView === item.id 
+              currentView === 'settings' 
                 ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary/20' 
                 : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'
-            }`}
+            } text-sm font-medium`}
           >
-            <item.icon className="w-5 h-5" />
-            {item.label}
+            <Settings className="w-5 h-5" />
+            Configurações
           </button>
-        ))}
-      </nav>
-
-      <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-1">
-        <button 
-          onClick={() => setView('settings')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-            currentView === 'settings' 
-              ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary/20' 
-              : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'
-          } text-sm font-medium`}
-        >
-          <Settings className="w-5 h-5" />
-          Configurações
-        </button>
-        <button 
-          onClick={() => signOut(auth)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error hover:bg-error-container/10 transition-colors text-sm font-medium"
-        >
-          <LogOut className="w-5 h-5" />
-          Sair
-        </button>
-      </div>
-    </aside>
+          <button 
+            onClick={() => signOut(auth)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error hover:bg-error-container/10 transition-colors text-sm font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            Sair
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };
 
-const TopBar = ({ user, currentView, setView, systemSettings }: { 
+const TopBar = ({ user, currentView, setView, systemSettings, onToggleSidebar }: { 
   user: User | null, 
   currentView: View, 
   setView: (v: View) => void,
-  systemSettings: any
+  systemSettings: any,
+  onToggleSidebar: () => void
 }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -208,9 +236,15 @@ const TopBar = ({ user, currentView, setView, systemSettings }: {
   const handleLogout = () => signOut(auth);
 
   return (
-    <header className="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-3 z-50 glass-panel border-b border-outline-variant/10">
-      <div className="flex items-center gap-8">
-        <span className="text-xl font-extrabold tracking-tighter text-primary font-headline cursor-pointer" onClick={() => setView('dashboard')}>
+    <header className="fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-6 py-3 z-50 glass-panel border-b border-outline-variant/10">
+      <div className="flex items-center gap-4 md:gap-8">
+        <button 
+          onClick={onToggleSidebar}
+          className="p-2 md:hidden text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
+        >
+          <LayoutDashboard className="w-6 h-6" />
+        </button>
+        <span className="text-lg md:text-xl font-extrabold tracking-tighter text-primary font-headline cursor-pointer truncate max-w-[120px] md:max-w-none" onClick={() => setView('dashboard')}>
           {systemSettings?.name || "Brasil 360"}
         </span>
         <nav className="hidden md:flex items-center gap-6 font-headline font-semibold text-sm tracking-tight">
@@ -235,7 +269,7 @@ const TopBar = ({ user, currentView, setView, systemSettings }: {
         </nav>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <div className="relative hidden lg:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline w-4 h-4" />
           <input 
@@ -244,20 +278,20 @@ const TopBar = ({ user, currentView, setView, systemSettings }: {
             type="text"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 md:gap-3">
           <button className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
             <Bell className="w-5 h-5" />
           </button>
           
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <div className="hidden sm:block text-right">
-                <p className="text-[10px] font-bold text-on-surface leading-none">{user.displayName}</p>
-                <p className="text-[9px] text-on-surface-variant">{user.email}</p>
+                <p className="text-[10px] font-bold text-on-surface leading-none truncate max-w-[80px] md:max-w-[120px]">{user.displayName}</p>
+                <p className="text-[9px] text-on-surface-variant truncate max-w-[80px] md:max-w-[120px]">{user.email}</p>
               </div>
               <button 
                 onClick={handleLogout}
-                className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container border border-outline-variant/20 overflow-hidden"
+                className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container border border-outline-variant/20 overflow-hidden shrink-0"
               >
                 {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <UserRound className="w-5 h-5" />}
               </button>
@@ -267,20 +301,16 @@ const TopBar = ({ user, currentView, setView, systemSettings }: {
               <button 
                 onClick={handleLogin}
                 disabled={isLoggingIn}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-white rounded-full text-[10px] md:text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50"
               >
                 {isLoggingIn ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <LogIn className="w-4 h-4" />
                 )}
-                {isLoggingIn ? "Carregando..." : "Entrar"}
+                <span className="hidden xs:inline">{isLoggingIn ? "Carregando..." : "Entrar"}</span>
+                <span className="xs:hidden">{isLoggingIn ? "..." : "Entrar"}</span>
               </button>
-              {isLoggingIn && (
-                <span className="text-[9px] text-primary mt-1 animate-pulse">
-                  Verifique se o navegador bloqueou o popup
-                </span>
-              )}
             </div>
           )}
         </div>
@@ -486,27 +516,30 @@ const DashboardGeral: React.FC<{ userProfile: UserProfile | null, onGenerateRepo
               </>
             )}
           </nav>
-          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">Visão Panorâmica de Indicadores</h1>
-          <p className="text-on-surface-variant mt-1">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">Visão Panorâmica de Indicadores</h1>
+          <p className="text-sm text-on-surface-variant mt-1">
             {isFiltered 
               ? `Dados consolidados da Equipe ${userProfile.equipeId}` 
               : 'Dados consolidados referentes ao Sistema de Saúde Nacional'}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="bg-surface-container-low p-1 rounded-full flex items-center">
-            <button className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white shadow-sm text-primary">Nacional</button>
-            <button className="px-4 py-1.5 rounded-full text-xs font-semibold text-on-surface-variant hover:text-on-surface">Regional</button>
-            <button className="px-4 py-1.5 rounded-full text-xs font-semibold text-on-surface-variant hover:text-on-surface">Local</button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="bg-surface-container-low p-1 rounded-full flex items-center w-fit">
+            <button className="px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-semibold bg-white shadow-sm text-primary">Nacional</button>
+            <button className="px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-semibold text-on-surface-variant hover:text-on-surface">Regional</button>
+            <button className="px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-semibold text-on-surface-variant hover:text-on-surface">Local</button>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant/20 rounded-xl text-sm font-medium hover:bg-surface-container-low transition-colors">
-            <Calendar className="w-4 h-4" />
-            Últimos 12 meses
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
-            <Activity className="w-4 h-4" />
-            Filtros Avançados
-          </button>
+          <div className="flex gap-2">
+            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-outline-variant/20 rounded-xl text-xs md:text-sm font-medium hover:bg-surface-container-low transition-colors">
+              <Calendar className="w-4 h-4" />
+              <span className="hidden xs:inline">Últimos 12 meses</span>
+              <span className="xs:hidden">12 meses</span>
+            </button>
+            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
+              <Activity className="w-4 h-4" />
+              Filtros
+            </button>
+          </div>
         </div>
       </header>
 
@@ -517,7 +550,7 @@ const DashboardGeral: React.FC<{ userProfile: UserProfile | null, onGenerateRepo
           { label: 'Alertas Críticos', value: stats.totalAlerts.toString(), sub: 'indicadores', trend: stats.totalAlerts > 0 ? '+1' : '0', icon: AlertCircle, color: 'bg-error-container text-error' },
           { label: 'Eficiência de Gestão', value: stats.score, sub: 'score', trend: 'estável', icon: TrendingUp, color: 'bg-surface-container-highest text-on-surface' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-3xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all">
+          <div key={i} className="bg-white p-5 md:p-6 rounded-3xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-2xl ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
@@ -536,7 +569,7 @@ const DashboardGeral: React.FC<{ userProfile: UserProfile | null, onGenerateRepo
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-3xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-xl font-bold">Desempenho por Ciclo de Vida</h2>
@@ -571,7 +604,7 @@ const DashboardGeral: React.FC<{ userProfile: UserProfile | null, onGenerateRepo
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm flex flex-col">
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
           <h2 className="text-xl font-bold mb-1">Alocação de Recursos</h2>
           <p className="text-sm text-on-surface-variant mb-8">Distribuição por prioridade clínica</p>
           <div className="flex-1 flex flex-col items-center justify-center">
@@ -694,12 +727,12 @@ const CiclosDeVida: React.FC<{ userProfile: UserProfile | null }> = ({ userProfi
                 <div key={i} className="flex flex-col items-center gap-2 flex-1 group">
                   <motion.div 
                     initial={{ height: 0 }}
-                    animate={{ height: `${[40, 50, 70, 65, 80, 90][i]}%` }}
-                    className={`w-full rounded-t-xl transition-colors relative ${month === 'Abr' ? 'bg-primary/40 border-t-4 border-primary' : 'bg-primary/20 group-hover:bg-primary/30'}`}
+                    animate={{ height: `${stats.totalPatients > 0 ? [40, 50, 70, 65, 80, 90][i] : 0}%` }}
+                    className={`w-full rounded-t-xl transition-colors relative ${month === 'Abr' && stats.totalPatients > 0 ? 'bg-primary/40 border-t-4 border-primary' : 'bg-primary/20 group-hover:bg-primary/30'}`}
                   >
-                    {month === 'Abr' && <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold">87%</div>}
+                    {month === 'Abr' && stats.totalPatients > 0 && <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold">87%</div>}
                   </motion.div>
-                  <span className={`text-[10px] font-medium ${month === 'Abr' ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>{month}</span>
+                  <span className={`text-[10px] font-medium ${month === 'Abr' && stats.totalPatients > 0 ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>{month}</span>
                 </div>
               ))}
             </div>
@@ -733,7 +766,7 @@ const CiclosDeVida: React.FC<{ userProfile: UserProfile | null }> = ({ userProfi
         </div>
       </section>
 
-      <section className="bg-white p-8 rounded-3xl shadow-sm border border-outline-variant/10">
+      <section className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-outline-variant/10">
         <div className="mb-6">
           <h2 className="text-xl font-bold">Performance por Unidade de Saúde</h2>
           <p className="text-sm text-on-surface-variant">Alcance de metas vacinais e consultas de crescimento.</p>
@@ -757,10 +790,9 @@ const CiclosDeVida: React.FC<{ userProfile: UserProfile | null }> = ({ userProfi
                   </td>
                 </tr>
               ) : (
-                [
-                  { name: 'UBS Jardim das Oliveiras', vac: 94.2, rot: '88%', status: 'Meta Atingida', color: 'bg-secondary-container text-secondary' },
-                  { name: 'UPA Central Norte', vac: 76.8, rot: '62%', status: 'Ação Urgente', color: 'bg-error-container text-error' },
-                ].map((row, i) => (
+                // In a real app, we would group patients by unit/UBS. 
+                // For now, we'll show a summary row if data exists.
+                [{ name: 'Sua Unidade / Equipe', vac: stats.vacinacaoPct, rot: `${stats.vacinacaoPct}%`, status: stats.vacinacaoPct >= 90 ? 'Meta Atingida' : 'Em Acompanhamento', color: stats.vacinacaoPct >= 90 ? 'bg-secondary-container text-secondary' : 'bg-amber-100 text-amber-700' }].map((row, i) => (
                   <tr key={i} className="group hover:bg-surface-container-low transition-colors">
                     <td className="py-4 font-bold text-primary">{row.name}</td>
                     <td className="py-4">
@@ -768,7 +800,7 @@ const CiclosDeVida: React.FC<{ userProfile: UserProfile | null }> = ({ userProfi
                         <div className="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
                           <div className={`h-full ${row.vac > 80 ? 'bg-secondary' : 'bg-error'}`} style={{ width: `${row.vac}%` }} />
                         </div>
-                        <span className="font-bold">{row.vac}%</span>
+                        <span className="font-bold">{row.vac.toFixed(1)}%</span>
                       </div>
                     </td>
                     <td className="py-4 text-center font-medium">{row.rot}</td>
@@ -844,6 +876,15 @@ const SaudeDaMulher: React.FC<{ userProfile: UserProfile | null, setView: (v: Vi
     ? (puerperas.filter(p => p.consultaPuerperal).length / puerperas.length * 100).toFixed(1)
     : '0.0';
 
+  // Alerts calculations
+  const gestantesAtraso = gestantes.filter(p => (p.consultasRealizadas || 0) < 7).length;
+  const puerperasAtraso = puerperas.filter(p => {
+    if (p.consultaPuerperal) return false;
+    const birthDate = new Date(p.dataNascimento);
+    const diffDays = Math.ceil(Math.abs(new Date().getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays > 30 && diffDays <= 42;
+  }).length;
+
   // Find overdue puerperal
   const overduePuerperas = puerperas.filter(p => {
     if (p.consultaPuerperal) return false;
@@ -860,27 +901,28 @@ const SaudeDaMulher: React.FC<{ userProfile: UserProfile | null, setView: (v: Vi
     >
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">Saúde da Mulher</h1>
-          <p className="text-on-surface-variant font-medium">Gestante, Puérpera e Rastreamento Oncológico</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">Saúde da Mulher</h1>
+          <p className="text-sm text-on-surface-variant font-medium">Gestante, Puérpera e Rastreamento Oncológico</p>
         </div>
-        <div className="flex gap-3">
-          <button className="bg-white text-on-surface-variant px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-2 border border-outline-variant/20 hover:bg-surface-container-low transition-all">
+        <div className="flex gap-2">
+          <button className="flex-1 md:flex-none bg-white text-on-surface-variant px-3 md:px-4 py-2 rounded-xl font-semibold text-xs md:text-sm flex items-center justify-center gap-2 border border-outline-variant/20 hover:bg-surface-container-low transition-all">
             <Calendar className="w-4 h-4" />
-            Últimos 30 dias
+            <span className="hidden xs:inline">Últimos 30 dias</span>
+            <span className="xs:hidden">30 dias</span>
           </button>
-          <button className="bg-primary text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center gap-2">
+          <button className="flex-1 md:flex-none bg-primary text-white px-4 md:px-6 py-2 rounded-xl font-bold text-xs md:text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" />
-            Nova Paciente
+            Paciente
           </button>
         </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Pré-Natal Completo', value: `${preNatalCompleto}%`, sub: 'Mínimo 7 consultas', trend: '+12%', color: 'bg-primary-container text-primary' },
-          { label: 'Acomp. Puerperal', value: `${acompPuerperal}%`, sub: 'Até 42 dias pós-parto', trend: '-3%', color: 'bg-secondary-container text-secondary' },
-          { label: 'Citopatológico', value: '91.8%', sub: 'Cobertura trienal', trend: 'Meta OK', color: 'bg-tertiary-container text-white' },
-          { label: 'Mamografias', value: '52.1%', sub: 'Fila: 124 mulheres', trend: 'Crítico', color: 'bg-error-container text-error' },
+          { label: 'Pré-Natal Completo', value: `${preNatalCompleto}%`, sub: 'Mínimo 7 consultas', trend: '0%', color: 'bg-primary-container text-primary' },
+          { label: 'Acomp. Puerperal', value: `${acompPuerperal}%`, sub: 'Até 42 dias pós-parto', trend: '0%', color: 'bg-secondary-container text-secondary' },
+          { label: 'Citopatológico', value: '0.0%', sub: 'Cobertura trienal', trend: '0%', color: 'bg-tertiary-container text-white' },
+          { label: 'Mamografias', value: '0.0%', sub: 'Fila de espera', trend: '0%', color: 'bg-error-container text-error' },
         ].map((kpi, i) => (
           <div key={i} className="bg-white p-5 rounded-3xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-4">
@@ -973,9 +1015,9 @@ const SaudeDaMulher: React.FC<{ userProfile: UserProfile | null, setView: (v: Vi
             <h3 className="text-lg font-bold mb-4">Alertas de Atenção</h3>
             <div className="space-y-4">
               {[
-                { label: '14 Gestantes', desc: 'Consultas em atraso (> 30 dias)', color: 'bg-error' },
-                { label: '8 Puérperas', desc: 'Próximas ao limite de 42 dias', color: 'bg-amber-500' },
-                { label: '22 Exames', desc: 'Resultados aguardando revisão', color: 'bg-primary' },
+                { label: `${gestantesAtraso} Gestantes`, desc: 'Pré-natal incompleto (< 7 consultas)', color: 'bg-error' },
+                { label: `${puerperasAtraso} Puérperas`, desc: 'Próximas ao limite de 42 dias', color: 'bg-amber-500' },
+                { label: '0 Exames', desc: 'Resultados aguardando revisão', color: 'bg-primary' },
               ].map((alert, i) => (
                 <div key={i} className="flex gap-4 items-start p-3 bg-white rounded-2xl shadow-sm">
                   <div className={`w-2 h-2 rounded-full ${alert.color} mt-1.5 shrink-0`} />
@@ -1073,12 +1115,12 @@ const BuscaAtiva: React.FC<{ userProfile: UserProfile | null }> = ({ userProfile
     >
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">Busca Ativa</h1>
-          <p className="text-on-surface-variant">Pacientes com pendências críticas de acompanhamento.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">Busca Ativa</h1>
+          <p className="text-sm text-on-surface-variant">Pacientes com pendências críticas de acompanhamento.</p>
         </div>
         <button 
           onClick={generatePDF}
-          className="bg-primary text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center gap-2"
+          className="w-full md:w-auto bg-primary text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2"
         >
           <Download className="w-4 h-4" />
           Exportar Lista (PDF)
@@ -1103,8 +1145,8 @@ const BuscaAtiva: React.FC<{ userProfile: UserProfile | null }> = ({ userProfile
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[600px]">
           <thead className="bg-surface-container-low border-b border-outline-variant/10">
             <tr>
               <th className="px-6 py-4 font-bold">Paciente</th>
@@ -1198,7 +1240,7 @@ const CondicoesCronicas: React.FC<{ userProfile: UserProfile | null }> = ({ user
           { label: 'Pressão Arterial (HAS)', value: `${stats.hasPct.toFixed(1)}%`, trend: '+0%', meta: '85%', color: 'border-primary', iconColor: 'text-primary' },
           { label: 'Hemoglobina Glicada (DM)', value: `${stats.dmPct.toFixed(1)}%`, trend: '+0%', meta: '70%', color: 'border-secondary', iconColor: 'text-secondary' },
         ].map((card, i) => (
-          <div key={i} className={`bg-white rounded-3xl p-8 border-b-4 ${card.color} shadow-sm`}>
+          <div key={i} className={`bg-white rounded-3xl p-6 md:p-8 border-b-4 ${card.color} shadow-sm`}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Acompanhamento Semestral</p>
@@ -1221,7 +1263,7 @@ const CondicoesCronicas: React.FC<{ userProfile: UserProfile | null }> = ({ user
         ))}
       </div>
 
-      <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h3 className="text-xl font-bold">Eficácia por Unidade Básica</h3>
@@ -1239,10 +1281,19 @@ const CondicoesCronicas: React.FC<{ userProfile: UserProfile | null }> = ({ user
           </div>
           
           <div className="relative w-full h-full">
-            <div className="absolute bottom-[20%] left-[15%] w-12 h-12 rounded-full bg-error/20 border-2 border-error flex items-center justify-center text-[10px] font-bold text-error shadow-lg">UBS 04</div>
-            <div className="absolute bottom-[45%] left-[35%] w-16 h-16 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-[10px] font-bold text-primary shadow-lg">UBS 01</div>
-            <div className="absolute bottom-[75%] left-[65%] w-20 h-20 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center text-[10px] font-bold text-secondary shadow-lg">UBS 09</div>
-            <div className="absolute bottom-[85%] left-[85%] w-14 h-14 rounded-full bg-secondary/40 border-2 border-secondary flex items-center justify-center text-[10px] font-bold text-secondary shadow-lg">UBS 02</div>
+            {stats.totalPatients > 0 && (
+              <>
+                <div className="absolute bottom-[20%] left-[15%] w-12 h-12 rounded-full bg-error/20 border-2 border-error flex items-center justify-center text-[10px] font-bold text-error shadow-lg">UBS 04</div>
+                <div className="absolute bottom-[45%] left-[35%] w-16 h-16 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-[10px] font-bold text-primary shadow-lg">UBS 01</div>
+                <div className="absolute bottom-[75%] left-[65%] w-20 h-20 rounded-full bg-secondary/20 border-2 border-secondary flex items-center justify-center text-[10px] font-bold text-secondary shadow-lg">UBS 09</div>
+                <div className="absolute bottom-[85%] left-[85%] w-14 h-14 rounded-full bg-secondary/40 border-2 border-secondary flex items-center justify-center text-[10px] font-bold text-secondary shadow-lg">UBS 02</div>
+              </>
+            )}
+            {stats.totalPatients === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center text-on-surface-variant italic text-sm">
+                Nenhum dado disponível para exibição no gráfico.
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-2 left-8 text-[10px] font-bold text-on-surface-variant">BAIXO ACOMPANHAMENTO</div>
@@ -1443,7 +1494,7 @@ const SettingsView: React.FC<{
           </div>
 
           {isAdmin && (
-            <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Settings className="text-primary w-5 h-5" />
                 Configurações Globais do Sistema
@@ -1482,7 +1533,7 @@ const SettingsView: React.FC<{
           )}
 
           {isAdmin && pendingUsers.length > 0 && (
-            <div className="bg-amber-50 rounded-3xl p-8 border border-amber-200 shadow-sm mb-8">
+            <div className="bg-amber-50 rounded-3xl p-6 md:p-8 border border-amber-200 shadow-sm mb-8">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-amber-800">
                 <Bell className="w-5 h-5" />
                 Solicitações de Acesso Pendentes ({pendingUsers.length})
@@ -1528,7 +1579,7 @@ const SettingsView: React.FC<{
           )}
 
           {isAdmin && (
-            <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Users className="text-primary w-5 h-5" />
                 Gestão de Profissionais
@@ -1561,7 +1612,7 @@ const SettingsView: React.FC<{
         </div>
 
         <div className="space-y-6">
-          <div className="bg-primary text-white rounded-3xl p-8 shadow-xl shadow-primary/20 relative overflow-hidden">
+          <div className="bg-primary text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-primary/20 relative overflow-hidden">
             <div className="absolute -right-8 -bottom-8 opacity-10">
               <Settings className="w-40 h-40" />
             </div>
@@ -1823,6 +1874,7 @@ function AppContent() {
   const [generating, setGenerating] = useState(false);
   const [systemSettings, setSystemSettings] = useState<any>({ name: 'Brasil 360', subtitle: 'Unidade Central' });
   const [equipes, setEquipes] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc) => {
@@ -2000,16 +2052,24 @@ function AppContent() {
         </div>
       ) : (
         <>
-          <TopBar user={user} currentView={view} setView={setView} systemSettings={systemSettings} />
+          <TopBar 
+            user={user} 
+            currentView={view} 
+            setView={setView} 
+            systemSettings={systemSettings} 
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
           <Sidebar 
             currentView={view} 
             setView={setView} 
             userProfile={userProfile} 
             equipes={equipes} 
             systemSettings={systemSettings} 
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
           />
           
-          <main className="md:ml-72 pt-24 px-6 pb-12 lg:px-10">
+          <main className="ml-0 md:ml-72 pt-24 px-4 md:px-6 pb-12 lg:px-10">
             <div className="max-w-7xl mx-auto">
               <AnimatePresence mode="wait">
                 {view === 'dashboard' && <DashboardGeral key="dashboard" userProfile={userProfile} onGenerateReport={generateWeeklyReport} setView={setView} />}
